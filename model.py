@@ -3,7 +3,6 @@ model.py - Fake Job Posting Detection
 Trains a TF-IDF + Logistic Regression classifier on the fake job postings dataset.
 Saves the trained model and vectorizer for use in the Flask API.
 
-Dataset: https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction
 """
 
 import pandas as pd
