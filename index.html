@@ -1,1 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JobGuard â€” Fake Job Detector</title>
 
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+
+<style>
+
+:root {
+  --bg:          #0d0f12;
+  --surface:     #13161b;
+  --surface2:    #1c2029;
+  --border:      #252932;
+  --border2:     #2e3440;
+  --text:        #e8eaf0;
+  --text-muted:  #6b7280;
+  --accent:      #00e5a0;   
+  --danger:      #ff4d6d;   
+  --warn:        #ffb347;   
+  --mono:        'DM Mono', monospace;
+  --sans:        'DM Sans', sans-serif;
+  --display:     'Syne', sans-serif;
+  --radius:      10px;
+  --transition:  0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1.25rem 4rem;
+  
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: -1px -1px;
+}
+
+
+header {
+  width: 100%;
+  max-width: 780px;
+  padding: 3rem 0 2.5rem;
+  text-align: center;
+}
+
+.logo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  padding: 0.35rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 1.4rem;
+}
+
+.logo-badge::before {
+  content: '';
+  width: 7px; height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+h1 {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 6vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+h1 span { color: var(--accent); }
+
+.tagline {
+  margin-top: 0.85rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 300;
+  max-width: 480px;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+
+
+.card {
+  width: 100%;
+  max-width: 780px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 2.25rem 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(0,229,160,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+
+label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.65rem;
+}
+
+
+textarea {
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  padding: 1rem 1.2rem;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+textarea::placeholder { color: var(--text-muted); }
+
+textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.12);
+}
+
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  margin-bottom: 1.4rem;
+}
+
+.char-count {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.quick-fill {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chip {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text-muted);
+  border-radius: 100px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+
+
+button#analyzeBtn {
+  width: 100%;
+  padding: 0.9rem 2rem;
+  background: var(--accent);
+  color: #0d0f12;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+button#analyzeBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,229,160,0.28);
+}
+
+button#analyzeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+.spinner {
+  display: none;
+  width: 18px; height: 18px;
+  border: 2px solid rgba(13,15,18,0.3);
+  border-top-color: #0d0f12;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+.error-box {
+  display: none;
+  margin-top: 1.2rem;
+  padding: 0.9rem 1.2rem;
+  background: rgba(255,77,109,0.08);
+  border: 1px solid rgba(255,77,109,0.3);
+  border-radius: var(--radius);
+  color: var(--danger);
+  font-size: 0.875rem;
+  font-family: var(--mono);
+}
+
+
+#resultsPanel {
+  display: none;
+  margin-top: 1.8rem;
+  animation: fadeUp 0.4s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
+.verdict {
+  border-radius: var(--radius);
+  padding: 1.4rem 1.6rem;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-bottom: 1.2rem;
+  border: 1px solid;
+}
+
+.verdict.real {
+  background: rgba(0,229,160,0.07);
+  border-color: rgba(0,229,160,0.25);
+}
+
+.verdict.fake {
+  background: rgba(255,77,109,0.07);
+  border-color: rgba(255,77,109,0.25);
+}
+
+.verdict-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.verdict-label {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.verdict.real  .verdict-label { color: var(--accent); }
+.verdict.fake  .verdict-label { color: var(--danger); }
+
+.verdict-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+  font-family: var(--mono);
+}
+
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+
+.stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  text-align: center;
+}
+
+.stat-value {
+  font-family: var(--display);
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stat-card.conf .stat-value  { color: var(--accent); }
+.stat-card.risk-high .stat-value  { color: var(--danger); }
+.stat-card.risk-med  .stat-value  { color: var(--warn);   }
+.stat-card.risk-low  .stat-value  { color: var(--accent); }
+.stat-card.kw   .stat-value  { color: var(--warn);  }
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-top: 0.4rem;
+}
+
+
+.conf-bar-wrap {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.2rem;
+}
+
+.conf-bar-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.65rem;
+}
+
+.conf-bar-track {
+  width: 100%;
+  height: 8px;
+  background: var(--border);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.conf-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  width: 0%;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.conf-bar-fill.real { background: var(--accent); }
+.conf-bar-fill.fake { background: var(--danger); }
+
+
+.explanation {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+}
+
+.explanation.fake-exp { border-left-color: var(--danger); }
+
+.explanation-title {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.45rem;
+}
+
+
+.keywords-box {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid rgba(255,179,71,0.25);
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+}
+
+.keywords-title {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--warn);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.keywords-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.kw-tag {
+  background: rgba(255,179,71,0.1);
+  border: 1px solid rgba(255,179,71,0.3);
+  color: var(--warn);
+  border-radius: 100px;
+  padding: 0.25rem 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+
+mark {
+  background: rgba(255,179,71,0.25);
+  color: var(--warn);
+  border-radius: 3px;
+}
+
+
+footer {
+  margin-top: 2.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  text-align: center;
+}
+
+
+@media (max-width: 540px) {
+  .card { padding: 1.5rem 1.25rem; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 2.2rem; }
+}
+</style>
+</head>
+
+<body>
+
+
+<header>
+  <div class="logo-badge">AI-Powered Analysis</div>
+  <h1>Job<span>Guard</span></h1>
+  <p class="tagline">
+    Paste any job posting below and our ML model will detect fraudulent patterns in seconds.
+  </p>
+</header>
+
+
+<main class="card">
+
+  
+  <label for="jobText">Job Description</label>
+  <textarea
+    id="jobText"
+    placeholder="Paste the full job posting here â€” title, description, requirements, benefits..."
+    spellcheck="false"
+  ></textarea>
+
+  <div class="meta-row">
+    <span class="char-count" id="charCount">0 characters</span>
+    <div class="quick-fill">
+      <button class="chip" onclick="fillSample('real')">Try Real Job â†—</button>
+      <button class="chip" onclick="fillSample('fake')">Try Fake Job â†—</button>
+    </div>
+  </div>
+
+  
+  <button id="analyzeBtn" onclick="analyze()">
+    <span id="btnText">Analyze Posting</span>
+    <div class="spinner" id="spinner"></div>
+  </button>
+
+  
+  <div class="error-box" id="errorBox"></div>
+
+  
+  <div id="resultsPanel">
+
+    
+    <div class="verdict" id="verdictStrip">
+      <div class="verdict-icon" id="verdictIcon"></div>
+      <div>
+        <div class="verdict-label" id="verdictLabel"></div>
+        <div class="verdict-sub"   id="verdictSub"></div>
+      </div>
+    </div>
+
+    
+    <div class="stats-row">
+      <div class="stat-card conf">
+        <div class="stat-value" id="statConf">â€”</div>
+        <div class="stat-label">Confidence</div>
+      </div>
+      <div class="stat-card" id="riskCard">
+        <div class="stat-value" id="statRisk">â€”</div>
+        <div class="stat-label">Risk Level</div>
+      </div>
+      <div class="stat-card kw">
+        <div class="stat-value" id="statKw">â€”</div>
+        <div class="stat-label">Red Flags</div>
+      </div>
+    </div>
+
+    
+    <div class="conf-bar-wrap">
+      <div class="conf-bar-label">Model Confidence</div>
+      <div class="conf-bar-track">
+        <div class="conf-bar-fill" id="confBar"></div>
+      </div>
+    </div>
+
+    
+    <div class="explanation" id="explanationBox">
+      <div class="explanation-title">Why this result?</div>
+      <span id="explanationText"></span>
+    </div>
+
+    
+    <div class="keywords-box" id="keywordsBox">
+      <div class="keywords-title">âš  Suspicious Keywords Detected</div>
+      <div class="keywords-grid" id="keywordsGrid"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  JobGuard &mdash; Fake Job Detection &nbsp;|&nbsp; TF-IDF + Logistic Regression &nbsp;|&nbsp; scikit-learn
+</footer>
+
+
+<script>
+const API_URL = "http://127.0.0.1:5000/predict";
+const SAMPLES = {
+  real: `Software Engineer â€” Google Cloud
+Location: Sunnyvale, CA (Hybrid)
+Employment Type: Full-time | Experience: 3-5 Years
+
+About the Role:
+We are looking for a skilled Software Engineer to join the Google Cloud infrastructure team. You will design, develop, and maintain scalable distributed systems that power cloud services used by millions of customers worldwide.
+
+Responsibilities:
+â€¢ Design and implement high-performance backend services in Python and Go
+â€¢ Conduct code reviews and contribute to engineering best practices
+â€¢ Collaborate with cross-functional teams including product management and SRE
+â€¢ Mentor junior engineers and participate in on-call rotations
+
+Requirements:
+â€¢ B.Sc. or M.Sc. in Computer Science or related field
+â€¢ 3+ years of professional software development experience
+â€¢ Strong proficiency in Python, Java, or Go
+â€¢ Experience with distributed systems and microservices architecture
+â€¢ Familiarity with Kubernetes and Docker
+
+Benefits:
+Competitive salary ($140,000â€“$200,000), comprehensive health and dental insurance, 401(k) with matching, 20 days PTO, and an annual learning budget of $5,000.
+
+Google is an equal opportunity employer.`,
+
+  fake: `URGENT HIRING!! Work From Home â€” Earn $500 to $2000 PER WEEK!!!
+
+No experience needed! No degree required! Be your own boss today!
+
+Are you looking for easy money from the comfort of your home? Our amazing data entry opportunity is PERFECT for you!
+
+âœ… Earn guaranteed daily pay
+âœ… Flexible hours â€” part time or full time
+âœ… 100% remote, work from home
+âœ… No interview needed â€” immediate hire
+âœ… Uncapped commission + referral bonus for every person you bring
+
+What you'll do:
+Simple data entry tasks, sorting emails, and filling out online forms. Anyone can do it! Unlimited earning potential!
+
+Requirements:
+â€¢ Anyone can apply â€” no experience, no degree, no skills needed!
+â€¢ Must have a phone or laptop
+â€¢ Must be willing to pay a small training fee of $49 to receive your starter kit
+
+Payment via Western Union, wire transfer, or PayPal. Weekly pay guaranteed!
+
+APPLY NOW!! Limited spots available! WhatsApp us at +1-800-SCAM-JOB or click here to register immediately. Do not miss this life-changing opportunity!!!`
+};
+const textarea  = document.getElementById("jobText");
+const charCount = document.getElementById("charCount");
+
+textarea.addEventListener("input", () => {
+  charCount.textContent = `${textarea.value.length.toLocaleString()} characters`;
+});
+function fillSample(type) {
+  textarea.value = SAMPLES[type];
+  charCount.textContent = `${textarea.value.length.toLocaleString()} characters`;
+  document.getElementById("resultsPanel").style.display = "none";
+  document.getElementById("errorBox").style.display = "none";
+}
+async function analyze() {
+  const text = textarea.value.trim();
+  if (!text) {
+    showError("Please paste a job description before analyzing.");
+    return;
+  }
+  if (text.length < 20) {
+    showError("Job description is too short. Please provide more detail.");
+    return;
+  }
+
+  setLoading(true);
+  hideError();
+  document.getElementById("resultsPanel").style.display = "none";
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    renderResults(data);
+
+  } catch (err) {
+    if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+      showError("Cannot reach the API. Make sure Flask is running: python app.py");
+    } else {
+      showError(err.message);
+    }
+  } finally {
+    setLoading(false);
+  }
+}
+function renderResults(data) {
+  const isFake = data.prediction === 1;
+  const strip = document.getElementById("verdictStrip");
+  strip.className = `verdict ${isFake ? "fake" : "real"}`;
+  document.getElementById("verdictIcon").textContent  = isFake ? "ðŸš¨" : "âœ…";
+  document.getElementById("verdictLabel").textContent = isFake ? "FAKE JOB POSTING" : "APPEARS LEGITIMATE";
+  document.getElementById("verdictSub").textContent   =
+    isFake
+      ? "This posting matches patterns commonly seen in fraudulent listings."
+      : "This posting aligns with genuine job advertisements.";
+  document.getElementById("statConf").textContent = `${data.confidence}%`;
+
+  const riskCard = document.getElementById("riskCard");
+  riskCard.className = `stat-card risk-${data.risk_level.toLowerCase()}`;
+  document.getElementById("statRisk").textContent = data.risk_level;
+  document.getElementById("statKw").textContent   = data.suspicious_keywords.length;
+  const bar = document.getElementById("confBar");
+  bar.className = `conf-bar-fill ${isFake ? "fake" : "real"}`;
+  bar.style.width = "0%";
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { bar.style.width = `${data.confidence}%`; });
+  });
+  const expBox = document.getElementById("explanationBox");
+  expBox.className = `explanation ${isFake ? "fake-exp" : ""}`;
+  document.getElementById("explanationText").textContent = data.explanation;
+  const kwBox  = document.getElementById("keywordsBox");
+  const kwGrid = document.getElementById("keywordsGrid");
+  kwGrid.innerHTML = "";
+  if (data.suspicious_keywords.length > 0) {
+    kwBox.style.display = "block";
+    data.suspicious_keywords.forEach(kw => {
+      const tag = document.createElement("span");
+      tag.className = "kw-tag";
+      tag.textContent = kw;
+      kwGrid.appendChild(tag);
+    });
+  } else {
+    kwBox.style.display = "none";
+  }
+  const panel = document.getElementById("resultsPanel");
+  panel.style.display = "block";
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function setLoading(state) {
+  const btn     = document.getElementById("analyzeBtn");
+  const btnText = document.getElementById("btnText");
+  const spinner = document.getElementById("spinner");
+  btn.disabled         = state;
+  btnText.style.display = state ? "none"  : "inline";
+  spinner.style.display = state ? "block" : "none";
+}
+
+function showError(msg) {
+  const box = document.getElementById("errorBox");
+  box.textContent    = `âš  ${msg}`;
+  box.style.display  = "block";
+}
+
+function hideError() {
+  document.getElementById("errorBox").style.display = "none";
+}
+textarea.addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) analyze();
+});
+
+async function sendData() {
+    const title = document.getElementById("title").value;
+    const description = document.getElementById("description").value;
+
+    const response = await fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title, description })
+    });
+
+    const data = await response.json();
+    alert("Prediction: " + data.prediction);
+}
+</script>
+</body>
+</html>
